@@ -43,7 +43,7 @@ public class QuartzJob extends QuartzJobBean implements StatefulJob {
 		String methodName = (String) context.getMergedJobDataMap().get(OBJECT_METHOD);
 		try {
 			ReflectionUtil.invokeMethod(
-                    SpringContext.getBean("testBatch"),
+                    SpringContext.getBean(beanName),
 					methodName, null, null);
 		} catch (Exception e) {
 			 logger.warn("批处理调用失败: " + beanName +"." + methodName + "\n" , e);

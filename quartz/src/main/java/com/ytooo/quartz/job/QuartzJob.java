@@ -1,7 +1,9 @@
 package com.ytooo.quartz.job;
 
 import com.ytooo.context.SpringContext;
+import com.ytooo.quartz.enums.QuartzEnum;
 import com.ytooo.quartz.util.ReflectionUtil;
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.StatefulJob;
@@ -13,24 +15,12 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
  * 工具类：调用具体批处理业务类,串行执行
  * Created by Youdmeng on 2019/6/28 0028.
  */
-public class QuartzJob extends QuartzJobBean implements StatefulJob {
+@DisallowConcurrentExecution //禁止同一个 JobDetail 中的多个实例并发执行
+public class QuartzJob extends QuartzJobBean {
 
 	private static final  Logger logger = LoggerFactory.getLogger(QuartzJob.class);
 
-	/**
-	 * key 对象标识
-	 */
-	public static final String OBJECT_NAME = "beanName";
 
-	/**
-	 * key beanId
-	 */
-	public static final String OBJECT_ID = "beanId";
-
-	/**
-	 * key 对象方法
-	 */
-	public static final String OBJECT_METHOD = "methodName";
 
 	/**
 	 * 调用jobmap中的配置的bean.method
@@ -39,8 +29,8 @@ public class QuartzJob extends QuartzJobBean implements StatefulJob {
 	protected void executeInternal(JobExecutionContext context)
 			throws JobExecutionException {
 
-		String beanName = (String) context.getMergedJobDataMap().get(OBJECT_NAME);
-		String methodName = (String) context.getMergedJobDataMap().get(OBJECT_METHOD);
+		String beanName = (String) context.getMergedJobDataMap().get(QuartzEnum.OBJECT_NAME);
+		String methodName = (String) context.getMergedJobDataMap().get(QuartzEnum.OBJECT_METHOD);
 		try {
 			ReflectionUtil.invokeMethod(
                     SpringContext.getBean(beanName),

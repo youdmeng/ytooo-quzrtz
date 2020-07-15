@@ -12,15 +12,15 @@ import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import java.util.List;
 
 /**
  * 以多线程的方式执行任务
- * @author fengyb_ebiz
  *
  */
-public class QuartzPoolJob extends QuartzJob {
+public class QuartzPoolJob extends QuartzJobBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(QuartzPoolJob.class);
 
@@ -31,20 +31,20 @@ public class QuartzPoolJob extends QuartzJob {
 	@Override
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
 
-		String beanName = (String) context.getMergedJobDataMap().get(OBJECT_NAME);
-		String methodName = (String) context.getMergedJobDataMap().get(OBJECT_METHOD);
+		String beanName = (String) context.getMergedJobDataMap().get(QuartzEnum.OBJECT_NAME);
+		String methodName = (String) context.getMergedJobDataMap().get(QuartzEnum.OBJECT_METHOD);
 		String listMethodName = methodName + "Data";
 		String finalMethodName = methodName + "Final";
 				
 		//线程池
 		ThreadPoolTaskExecutor threadPool = (ThreadPoolTaskExecutor)
-		    context.getJobDetail().getJobDataMap().get(QuartzEnum.THREAD_POOL + OBJECT_ID);
+		    context.getJobDetail().getJobDataMap().get(QuartzEnum.THREAD_POOL + QuartzEnum.OBJECT_ID);
 		
 		/**
 		 * 如果线程池为空则初始换线程池，并放到context中
 		 */
 		if (null == threadPool) {
-			int poolSize = Integer.parseInt((String) context.getMergedJobDataMap().get(QuartzEnum.OBJECT_OBJECT_POOL_SIZE));
+			int poolSize = Integer.parseInt((String) context.getMergedJobDataMap().get(QuartzEnum.THREAD_POOL_SIZE));
 			if (poolSize < 1) {
 				poolSize = 1;
 			}
@@ -60,7 +60,7 @@ public class QuartzPoolJob extends QuartzJob {
 			}
 
 			threadPool = ExecutorUtil.createPoolTaskExecutor(poolSize,queueSize);
-			context.getJobDetail().getJobDataMap().put(QuartzEnum.THREAD_POOL + OBJECT_ID, threadPool);
+			context.getJobDetail().getJobDataMap().put(QuartzEnum.THREAD_POOL + QuartzEnum.OBJECT_ID, threadPool);
 			logger.info(beanName + ".(" + listMethodName + "," + methodName + ");线程池创建完成");
 		}else{
 			logger.info(beanName + ".(" + listMethodName + "," + methodName + ");线程池从context中取得");

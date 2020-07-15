@@ -7,10 +7,9 @@ import com.ytooo.quartz.job.QuartzPoolJob;
 import com.ytooo.quartz.job.QuartzSectionPoolJob;
 import com.ytooo.quartz.service.QuartzService;
 import com.ytooo.quartz.util.QuartzUtil;
-import com.ytooo.repository.QuartzInfoEO;
-import com.ytooo.repository.QuartzInfoEOPage;
-import com.ytooo.repository.dao.QuartzInfoEODao;
-import org.apache.commons.lang3.StringUtils;
+import com.ytooo.repository.QuartzInfo;
+import com.ytooo.repository.QuartzInfoExample;
+import com.ytooo.repository.dao.QuartzInfoDao;
 import org.quartz.JobKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,47 +31,33 @@ public class QuartzServiceImpl implements QuartzService {
     private QuartzUtil quartzUtil;
 
     @Autowired
-    private QuartzInfoEODao quartzInfoEODao;
+    private QuartzInfoDao quartzInfoDao;
 
     @Value("${batch.run.key}")
     private String runKey;
 
     public void initScheduler() throws Exception {
 
-        QuartzInfoEOPage page = new QuartzInfoEOPage();
-        List<QuartzInfoEO> batchList = quartzInfoEODao.queryByList(page);
+//        QuartzInfoEOPage page = new QuartzInfoEOPage();
+        QuartzInfoExample example = new QuartzInfoExample();
+        example.createCriteria().andIsDeleteEqualTo(0);
+        List<QuartzInfo> batchList = quartzInfoDao.selectByExample(example);
         if (batchList.size() <= 0) {
             logger.info("[未发现批处理],获取批处理列表大小为0");
         }
         //逐笔设置任务信息到quartz,并调度任务
         if (batchList.size() > 0) {
-            for (QuartzInfoEO batchInfo : batchList) {
+            for (QuartzInfo batchInfo : batchList) {
                 QuartzJobBean job = new QuartzJobBean();
                 job.setCronExpression(batchInfo.getExecuteTime());
-                //按照分号和等号拆分ExecuteParameter，然后将拆分后的参数放入到JobDataMap中
-                String exeParams = batchInfo.getExecuteParameter();
-                if (StringUtils.isNotBlank(exeParams)) {
-                    //分号拆分ExecuteParameter
-                    String[] params = exeParams.split(";");
-                    if (params.length > 0) {
-                        for (String s : params) {
-                            if (StringUtils.isNotBlank(s)) {
-                                //等号拆分字符串s
-                                String[] keyM = s.split("=");
-                                try {
-                                    job.getJobDataMap().put(keyM[0], keyM[1]);
-                                    logger.info("执行参数key:" + keyM[0] + ",value:" + keyM[1]);
-                                } catch (Exception e) {
-                                    logger.warn("批处理参数配置错误", e);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                job.getJobDataMap().put(QuartzJob.OBJECT_NAME, batchInfo.getObjectName());
-                job.getJobDataMap().put(QuartzJob.OBJECT_METHOD, batchInfo.getObjectMethod());
-
+                job.getJobDataMap().put(QuartzEnum.OBJECT_NAME, batchInfo.getObjectName());
+                job.getJobDataMap().put(QuartzEnum.OBJECT_METHOD, batchInfo.getObjectMethod());
+                job.getJobDataMap().put(QuartzEnum.BATCH_EXE_TYPE, batchInfo.getBatchExeType());
+                job.getJobDataMap().put(QuartzEnum.THREAD_POOL_SIZE, batchInfo.getThreadPoolSize());
+                job.getJobDataMap().put(QuartzEnum.QUEUE_CAPACITY, batchInfo.getQueueCapacity());
+                job.getJobDataMap().put(QuartzEnum.SECTION_SIZE, batchInfo.getSectionSize());
+                job.getJobDataMap().put(QuartzEnum.INDEX_START, batchInfo.getIndexStart());
+                job.getJobDataMap().put(QuartzEnum.INDEX_END, batchInfo.getIndexEnd());
                 //判断是否以多线程的方式执行任务
                 if (QuartzEnum.MULT_THREAD_DEFUALT.equals(job.getJobDataMap().get(QuartzEnum.BATCH_EXE_TYPE))) {
                     //多线程的方式执行任务
@@ -90,7 +75,7 @@ public class QuartzServiceImpl implements QuartzService {
 
                 job.setCronExpression(batchInfo.getExecuteTime());
                 String jobName = batchInfo.getName() + "_" + batchInfo.getId();
-                job.getJobDataMap().put(QuartzJob.OBJECT_ID, batchInfo.getId());
+                job.getJobDataMap().put(QuartzEnum.OBJECT_ID, batchInfo.getId());
                 job.setJobName(jobName);
                 logger.info("----开始部署任务:" + jobName + " [任务cron] " + "[" + batchInfo.getExecuteTime() + "]");
                 quartzUtil.scheduleCronJob(job);
@@ -120,6 +105,7 @@ public class QuartzServiceImpl implements QuartzService {
     public void cancelJob(JobKey key) throws Exception {
         quartzUtil.cancelJob(key);
     }
+
     /**
      * 取批处理任务
      *

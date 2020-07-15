@@ -53,7 +53,7 @@ public class QuartzUtil {
 		JobDetailFactoryBean jobDetailFactory = new JobDetailFactoryBean ();
 		jobDetailFactory.setName(quartzJobDTO.getJobName());                   //job类命名
 		jobDetailFactory.setJobDataAsMap(quartzJobDTO.getJobDataMap());
-		jobDetailFactory.setJobClass(QuartzJob.class);      //JobClass，job执行类
+		jobDetailFactory.setJobClass(quartzJobDTO.getJobClass());      //JobClass，job执行类
 		jobDetailFactory.afterPropertiesSet();
 		return  jobDetailFactory.getObject();
 	}

@@ -12,6 +12,7 @@ import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,7 @@ import java.util.Map;
  * 多线程任务列表分段提取模式
  * Created by Youdmeng on 2019/6/28 0028.
  */
-public class QuartzSectionPoolJob extends QuartzJob {
+public class QuartzSectionPoolJob extends QuartzJobBean {
 
     private static final Logger logger = LoggerFactory.getLogger(QuartzSectionPoolJob.class);
 
@@ -31,8 +32,8 @@ public class QuartzSectionPoolJob extends QuartzJob {
     @Override
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
 
-        String beanName = (String) context.getMergedJobDataMap().get(OBJECT_NAME);
-        String methodName = (String) context.getMergedJobDataMap().get(OBJECT_METHOD);
+        String beanName = (String) context.getMergedJobDataMap().get(QuartzEnum.OBJECT_NAME);
+        String methodName = (String) context.getMergedJobDataMap().get(QuartzEnum.OBJECT_METHOD);
         String listMethodName = methodName + "Data";
         String finalMethodName = methodName + "Final";
         String initMethodName = methodName + "Init";
@@ -68,13 +69,13 @@ public class QuartzSectionPoolJob extends QuartzJob {
 
         //线程池
         ThreadPoolTaskExecutor threadPool = (ThreadPoolTaskExecutor)
-                context.getJobDetail().getJobDataMap().get(QuartzEnum.THREAD_POOL + OBJECT_ID);
+                context.getJobDetail().getJobDataMap().get(QuartzEnum.THREAD_POOL + QuartzEnum.OBJECT_ID);
 
         /**
          * 如果线程池为空则初始换线程池，并放到context中
          */
         if (null == threadPool) {
-            int poolSize = Integer.parseInt((String) context.getMergedJobDataMap().get(QuartzEnum.OBJECT_OBJECT_POOL_SIZE));
+            int poolSize = Integer.parseInt((String) context.getMergedJobDataMap().get(QuartzEnum.THREAD_POOL_SIZE));
             if (poolSize < 1) {
                 poolSize = 1;
             }
@@ -90,7 +91,7 @@ public class QuartzSectionPoolJob extends QuartzJob {
             }
 
             threadPool = ExecutorUtil.createPoolTaskExecutor(poolSize, queueSize);
-            context.getJobDetail().getJobDataMap().put(QuartzEnum.THREAD_POOL + OBJECT_ID, threadPool);
+            context.getJobDetail().getJobDataMap().put(QuartzEnum.THREAD_POOL + QuartzEnum.OBJECT_ID, threadPool);
             logger.info(beanName + ".(" + listMethodName + "," + methodName + ");线程池创建完成");
         } else {
             logger.info(beanName + ".(" + listMethodName + "," + methodName + ");线程池从context中取得");
